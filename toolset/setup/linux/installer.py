@@ -172,6 +172,10 @@ class Installer:
     mysql -uroot -psecret < create.sql
     rm create.sql
 
+    #Configure mysql-memcached
+    mysql -uroot -psecret < /usr/share/mysql/innodb_memcached_config.sql
+    echo 'install plugin daemon_memcached soname "libmemcached.so";' | mysql -uroot -psecret
+
     ##############################
     # Postgres
     ##############################
