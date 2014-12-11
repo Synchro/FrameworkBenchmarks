@@ -33,6 +33,7 @@ def gather_tests(include = [], exclude=[], benchmarker=None):
   
   # Setup default Benchmarker using example configuration
   if benchmarker is None:
+    print "Creating Benchmarker from benchmark.cfg.example"
     default_config = setup_util.get_fwroot() + "/benchmark.cfg.example"
     config = ConfigParser.SafeConfigParser()
     config.readfp(open(default_config))
@@ -62,7 +63,7 @@ def gather_tests(include = [], exclude=[], benchmarker=None):
     with open(config_file_name, 'r') as config_file:
       try:
         config = json.load(config_file)
-      except:
+      except ValueError:
         # User-friendly errors
         print("Error loading '%s'." % config_file_name)
         raise
@@ -80,6 +81,20 @@ def gather_tests(include = [], exclude=[], benchmarker=None):
 
   tests.sort(key=lambda x: x.name)
   return tests
+
+def gather_frameworks(include = [], exclude=[], benchmarker=None):
+  '''Return a dictionary mapping frameworks->[test1,test2,test3]
+  for quickly grabbing all tests in a grouped manner. 
+  Args have the same meaning as gather_tests'''
+
+  tests = gather_tests(include, exclude, benchmarker)
+  frameworks = dict()
+
+  for test in tests:
+    if test.framework not in frameworks: 
+      frameworks[test.framework] = []
+    frameworks[test.framework].append(test)
+  return frameworks
 
 def header(message, top='-', bottom='-'):
     '''
@@ -100,4 +115,4 @@ def header(message, top='-', bottom='-'):
         result = "%s" % bottomheader
       else:
         result += "\n%s" % bottomheader
-    return result
+    return result + '\n'

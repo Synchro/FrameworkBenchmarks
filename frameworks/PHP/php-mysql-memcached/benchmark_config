@@ -19,7 +19,7 @@
       "os": "Linux",
       "database_os": "Linux",
       "display_name": "php-mysql-memcached",
-      "notes": "Using mysqlnd-memcache interface",
+      "notes": "Raw PHP using mysqlnd-memcache interface",
       "versus": "php"
     }
   }]

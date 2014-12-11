@@ -24,6 +24,7 @@ env:
     #   find . -type d -depth 2 | sed 's|./|    - "TESTDIR=|' | sed 's/$/"/g'
     #
     #  
+    - "TESTDIR=C/lwan"
     - "TESTDIR=C/duda"
     - "TESTDIR=C/onion"
     - "TESTDIR=C#/aspnet"
@@ -122,6 +123,7 @@ env:
     - "TESTDIR=PHP/php-yaf"
     - "TESTDIR=PHP/php-yii2"
     - "TESTDIR=PHP/php-zend-framework"
+    - "TESTDIR=PHP/php-zend-framework1"
     - "TESTDIR=PHP/phreeze"
     - "TESTDIR=Python/bottle"
     - "TESTDIR=Python/django"

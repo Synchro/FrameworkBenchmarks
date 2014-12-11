@@ -2,12 +2,7 @@
 
 This is the PHP portion of a [benchmarking test suite](../) comparing a variety of web development platforms.
 
-This benchmark is similar to the raw PHP benchmark, but it makes use of the [MySQL memcached interface](http://dev.mysql.com/doc/refman/5.6/en/innodb-memcached.html) introduced in MySQL 5.6 instead of the standard SQL interface. Only the database tests are implemented. On the PHP side, it makes use of the mysqlnd-memcached plugin and the Pear memcached extension. note that this is NOT the same as using conventional memcached in front of MySQL - it's a memcached-compatible interface directly into InnoDB - there is no separate memcached server running.
-
-### JSON Encoding Test
-Use the PHP standard [JSON encoder](http://www.php.net/manual/en/function.json-encode.php)
-
-* [JSON test source](json.php)
+This benchmark is the same as the raw PHP benchmark, except that it makes use of the [MySQL memcached interface](http://dev.mysql.com/doc/refman/5.6/en/innodb-memcached.html) introduced in MySQL 5.6 instead of the standard SQL interface. Only the database tests are implemented. On the PHP side, it makes use of the mysqlnd-memcached plugin and the Pecl memcached extension. Note that this is NOT the same as using conventional memcached as a cache in front of MySQL - it's a memcached-compatible interface directly into InnoDB - there is no separate memcached server involved.
 
 ### Data-Store/Database Mapping Test
 
