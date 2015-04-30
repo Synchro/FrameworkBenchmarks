@@ -82,6 +82,7 @@ env:
     - "TESTDIR=Java/wildfly-ee7"
     - "TESTDIR=JavaScript/express"
     - "TESTDIR=JavaScript/hapi"
+    - "TESTDIR=JavaScript/koa"
     - "TESTDIR=JavaScript/nodejs"
     - "TESTDIR=JavaScript/ringojs"
     - "TESTDIR=JavaScript/ringojs-convenient"
@@ -125,6 +126,7 @@ env:
     - "TESTDIR=Python/django"
     - "TESTDIR=Python/falcon"
     - "TESTDIR=Python/flask"
+    - "TESTDIR=Python/klein"
     - "TESTDIR=Python/pyramid"
     - "TESTDIR=Python/tornado"
     - "TESTDIR=Python/turbogears"
@@ -149,6 +151,7 @@ env:
     - "TESTDIR=Scala/spray"
     - "TESTDIR=Scala/spray-es"
     - "TESTDIR=Scala/unfiltered"
+    - "TESTDIR=Scala/http4s"
     - "TESTDIR=Ur/urweb"
 
 before_install:
