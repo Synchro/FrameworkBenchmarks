@@ -31,6 +31,7 @@ if (System.getProperty("grails.yjp")) {
 
 grails.project.dependency.resolver = "maven" // or ivy
 grails.project.dependency.resolution = {
+    cacheDir "target/ivy-cache"
     // inherit Grails' default dependencies
     inherits("global") {
         // uncomment to disable ehcache
@@ -44,7 +45,7 @@ grails.project.dependency.resolution = {
         inherits true // Whether to inherit repository definitions from plugins
         grailsPlugins()
         grailsHome()
-		mavenLocal()
+        mavenLocal()
         grailsCentral()
         mavenCentral()
 
@@ -59,11 +60,11 @@ grails.project.dependency.resolution = {
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
-        runtime 'mysql:mysql-connector-java:5.1.29'
+        runtime 'mysql:mysql-connector-java:5.1.34'
     }
 
     plugins {
-        runtime ":hibernate:3.6.10.16"
+        runtime ":hibernate:3.6.10.18"
         //runtime ":jquery:1.10.2"
         //runtime ":resources:1.2.1"
 
@@ -72,6 +73,6 @@ grails.project.dependency.resolution = {
         //runtime ":cached-resources:1.0"
         //runtime ":yui-minify-resources:0.1.4"
 
-        build ":tomcat:7.0.54"
+        build ":tomcat:7.0.55.2"
     }
 }

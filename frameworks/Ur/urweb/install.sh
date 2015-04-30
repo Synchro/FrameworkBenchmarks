@@ -1,11 +1,16 @@
 #!/bin/bash
 
-RETCODE=$(fw_exists /usr/local/bin/urweb)
-[ ! "$RETCODE" == 0 ] || { return 0; }
+VERSION=20150103
+COMPILER=${IROOT}/urweb
 
-fw_get http://www.impredicative.com/ur/urweb-20140830.tgz
-fw_untar urweb-20140830.tgz
-cd urweb-20140830
-./configure
+RETCODE=$(fw_exists $COMPILER)
+[ ! "$RETCODE" == 0 ] || [ ! `$COMPILER | grep -oE '[^ ]+$'` == "$VERSION" ] || { return 0; }
+
+fw_get http://www.impredicative.com/ur/urweb-$VERSION.tgz
+fw_untar urweb-$VERSION.tgz
+cd urweb-$VERSION
+./configure --prefix=${IROOT}/urweb
 make
-sudo make install
+make install
+
+touch ${IROOT}/urweb.installed

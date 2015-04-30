@@ -21,6 +21,11 @@ from threading import Event
 
 from utils import header
 
+# Cross-platform colored text
+from colorama import Fore, Back, Style
+from datetime import datetime
+from datetime import timedelta
+
 class FrameworkTest:
   headers_template = "-H 'Host: localhost' -H '{accept}' -H 'Connection: keep-alive'"
  
@@ -30,19 +35,19 @@ class FrameworkTest:
     echo ""
     echo "---------------------------------------------------------"
     echo " Running Primer {name}"
-    echo " {wrk} {headers} -d 5 -c 8 --timeout 8 -t 8 \"http://{server_host}:{port}{url}\""
+    echo " {wrk} {headers} --latency -d 5 -c 8 --timeout 8 -t 8 \"http://{server_host}:{port}{url}\""
     echo "---------------------------------------------------------"
     echo ""
-    {wrk} {headers} -d 5 -c 8 --timeout 8 -t 8 "http://{server_host}:{port}{url}"
+    {wrk} {headers} --latency -d 5 -c 8 --timeout 8 -t 8 "http://{server_host}:{port}{url}"
     sleep 5
     
     echo ""
     echo "---------------------------------------------------------"
     echo " Running Warmup {name}"
-    echo " {wrk} {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}\""
+    echo " {wrk} {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}\""
     echo "---------------------------------------------------------"
     echo ""
-    {wrk} {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}"
+    {wrk} {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}"
     sleep 5
 
     echo ""
@@ -57,11 +62,11 @@ class FrameworkTest:
       echo ""
       echo "---------------------------------------------------------"
       echo " Concurrency: $c for {name}"
-      echo " {wrk} {headers} -d {duration} -c $c --timeout $c -t $(($c>{max_threads}?{max_threads}:$c)) \"http://{server_host}:{port}{url}\""
+      echo " {wrk} {headers} --latency -d {duration} -c $c --timeout $c -t $(($c>{max_threads}?{max_threads}:$c)) \"http://{server_host}:{port}{url}\""
       echo "---------------------------------------------------------"
       echo ""
       STARTTIME=$(date +"%s")
-      {wrk} {headers} -d {duration} -c $c --timeout $c -t "$(($c>{max_threads}?{max_threads}:$c))" http://{server_host}:{port}{url}
+      {wrk} {headers} --latency -d {duration} -c $c --timeout $c -t "$(($c>{max_threads}?{max_threads}:$c))" http://{server_host}:{port}{url}
       echo "STARTTIME $STARTTIME"
       echo "ENDTIME $(date +"%s")"
       sleep 2
@@ -73,19 +78,19 @@ class FrameworkTest:
     echo ""
     echo "---------------------------------------------------------"
     echo " Running Primer {name}"
-    echo " {wrk} {headers} -d 5 -c 8 --timeout 8 -t 8 \"http://{server_host}:{port}{url}\""
+    echo " {wrk} {headers} --latency -d 5 -c 8 --timeout 8 -t 8 \"http://{server_host}:{port}{url}\""
     echo "---------------------------------------------------------"
     echo ""
-    {wrk} {headers} -d 5 -c 8 --timeout 8 -t 8 "http://{server_host}:{port}{url}"
+    {wrk} {headers} --latency -d 5 -c 8 --timeout 8 -t 8 "http://{server_host}:{port}{url}"
     sleep 5
     
     echo ""
     echo "---------------------------------------------------------"
     echo " Running Warmup {name}"
-    echo " {wrk} {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}\""
+    echo " {wrk} {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}\""
     echo "---------------------------------------------------------"
     echo ""
-    {wrk} {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}"
+    {wrk} {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}"
     sleep 5
 
     echo ""
@@ -100,11 +105,11 @@ class FrameworkTest:
       echo ""
       echo "---------------------------------------------------------"
       echo " Concurrency: $c for {name}"
-      echo " {wrk} {headers} -d {duration} -c $c --timeout $c -t $(($c>{max_threads}?{max_threads}:$c)) \"http://{server_host}:{port}{url}\" -s ~/pipeline.lua -- {pipeline}"
+      echo " {wrk} {headers} --latency -d {duration} -c $c --timeout $c -t $(($c>{max_threads}?{max_threads}:$c)) \"http://{server_host}:{port}{url}\" -s ~/pipeline.lua -- {pipeline}"
       echo "---------------------------------------------------------"
       echo ""
       STARTTIME=$(date +"%s")
-      {wrk} {headers} -d {duration} -c $c --timeout $c -t "$(($c>{max_threads}?{max_threads}:$c))" http://{server_host}:{port}{url} -s ~/pipeline.lua -- {pipeline}
+      {wrk} {headers} --latency -d {duration} -c $c --timeout $c -t "$(($c>{max_threads}?{max_threads}:$c))" http://{server_host}:{port}{url} -s ~/pipeline.lua -- {pipeline}
       echo "STARTTIME $STARTTIME"
       echo "ENDTIME $(date +"%s")"
       sleep 2
@@ -118,19 +123,19 @@ class FrameworkTest:
     echo ""
     echo "---------------------------------------------------------"
     echo " Running Primer {name}"
-    echo " wrk {headers} -d 5 -c 8 --timeout 8 -t 8 \"http://{server_host}:{port}{url}2\""
+    echo " wrk {headers} --latency -d 5 -c 8 --timeout 8 -t 8 \"http://{server_host}:{port}{url}2\""
     echo "---------------------------------------------------------"
     echo ""
-    wrk {headers} -d 5 -c 8 --timeout 8 -t 8 "http://{server_host}:{port}{url}2"
+    wrk {headers} --latency -d 5 -c 8 --timeout 8 -t 8 "http://{server_host}:{port}{url}2"
     sleep 5
     
     echo ""
     echo "---------------------------------------------------------"
     echo " Running Warmup {name}"
-    echo " wrk {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}2\""
+    echo " wrk {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}2\""
     echo "---------------------------------------------------------"
     echo ""
-    wrk {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}2"
+    wrk {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}2"
     sleep 5
 
     echo ""
@@ -145,11 +150,11 @@ class FrameworkTest:
       echo ""
       echo "---------------------------------------------------------"
       echo " Queries: $c for {name}"
-      echo " wrk {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}$c\""
+      echo " wrk {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} \"http://{server_host}:{port}{url}$c\""
       echo "---------------------------------------------------------"
       echo ""
       STARTTIME=$(date +"%s")
-      wrk {headers} -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}$c"
+      wrk {headers} --latency -d {duration} -c {max_concurrency} --timeout {max_concurrency} -t {max_threads} "http://{server_host}:{port}{url}$c"
       echo "STARTTIME $STARTTIME"
       echo "ENDTIME $(date +"%s")"
       sleep 2
@@ -161,100 +166,187 @@ class FrameworkTest:
   # Start the test using it's setup file
   ############################################################
   def start(self, out, err):
-    # Load profile for this installation
-    profile="%s/bash_profile.sh" % self.directory
-    if not os.path.exists(profile):
-      logging.warning("Directory %s does not have a bash_profile.sh" % self.directory)
-      profile="$FWROOT/config/benchmark_profile"
 
-    # Setup variables for TROOT and IROOT
-    setup_util.replace_environ(config=profile, 
-              command='export TROOT=%s && export IROOT=%s' %
-              (self.directory, self.install_root))
+    # Setup environment variables    
+    logDir = os.path.join(self.fwroot, self.benchmarker.latest_results_directory, 'logs', self.name.lower())
+    setup_util.replace_environ(config='$FWROOT/config/benchmark_profile', 
+              command='''\
+              export TROOT=%s       && \
+              export IROOT=%s       && \
+              export DBHOST=%s      && \
+              export LOGDIR=%s      && \
+              export MAX_THREADS=%s    \
+              ''' % (
+                self.directory, 
+                self.install_root, 
+                self.database_host, 
+                logDir,
+                self.benchmarker.threads))
 
-    # Because start can take so long, we print a dot to let the user know 
-    # we are working
-    class ProgressPrinterThread(Thread):
-      def __init__(self, event):
-          Thread.__init__(self)
-          self.stopped = event
-
-      def run(self):
-        while not self.stopped.wait(20):
-          sys.stderr.write("Waiting for start to return...\n")
-    stopFlag = Event()
-    thread = ProgressPrinterThread(stopFlag)
-    thread.start()
-
-    # Run the module start (inside parent of TROOT)
-    #     - we use the parent as a historical accident - a lot of tests
-    #       use subprocess's cwd argument already
+    # Run the module start inside parent of TROOT
+    #  - we use the parent as a historical accident, a number of tests
+    # refer to their TROOT maually still
     previousDir = os.getcwd()
     os.chdir(os.path.dirname(self.troot))
-    logging.info("Running setup module start (cwd=%s)", os.path.dirname(self.troot))
-    try:
-      retcode = self.setup_module.start(self, out, err)    
-      if retcode == None: 
-        retcode = 0
-    except Exception:
-      retcode = 1
-      st = traceback.format_exc()
-      st = '\n'.join((4 * ' ') + x for x in st.splitlines())
-      st = "Start exception:\n%s" % st
-      logging.info(st)
-      err.write(st + '\n')
+    logging.info("Running setup module start (cwd=%s)", self.directory)
+      
+    # Run the start script for the test as the "testrunner" user
+    # 
+    # `sudo` - Switching user requires superuser privs
+    #   -u [username] The username
+    #   -E Preserves the current environment variables
+    #   -H Forces the home var (~) to be reset to the user specified
+    # `stdbuf` - Disable buffering, send output to python ASAP
+    #   -o0 zero-sized buffer for stdout
+    #   -e0 zero-sized buffer for stderr
+    # `bash` - Run the setup.sh script using bash
+    #   -e Force bash to exit on first error
+    #   -x Turn on bash tracing e.g. print commands before running
+    #
+    # Most servers do not output to stdout/stderr while serving 
+    # requests so there is no performance hit from disabling 
+    # output buffering. This disabling is necessary to 
+    # a) allow TFB to show output in real time and b) avoid loosing 
+    # output in the buffer when the testrunner processes are forcibly 
+    # killed
+    # 
+    # See http://www.pixelbeat.org/programming/stdio_buffering/
+    # See https://blogs.gnome.org/markmc/2013/06/04/async-io-and-python/
+    # See http://eyalarubas.com/python-subproc-nonblock.html
+    command = 'sudo -u %s -E -H stdbuf -o0 -e0 bash -ex %s.sh' % (self.benchmarker.runner_user, self.setup_file)
+    
+    debug_command = '''\
+      export FWROOT=%s      && \\
+      export TROOT=%s       && \\
+      export IROOT=%s       && \\
+      export DBHOST=%s      && \\
+      export LOGDIR=%s      && \\
+      export MAX_THREADS=%s && \\
+      cd %s && \\
+      %s''' % (self.fwroot, 
+        self.directory, 
+        self.install_root, 
+        self.database_host,
+        logDir,
+        self.benchmarker.threads, 
+        self.directory,
+        command)
+    logging.info("To run %s manually, copy/paste this:\n%s", self.name, debug_command)
+
+
+    def tee_output(prefix, line):
+      # Needs to be one atomic write
+      # Explicitly use UTF-8 as it's the most common framework output 
+      # TODO improve encoding handling 
+      line = prefix.encode('utf-8') + line
+
+      # Log to current terminal
+      sys.stdout.write(line)
+      sys.stdout.flush()
+      # logging.error("".join([prefix, line]))
+
+      out.write(line)
+      out.flush()
+
+    # Start the setup.sh command
+    p = subprocess.Popen(command, cwd=self.directory, 
+          shell=True, stdout=subprocess.PIPE, 
+          stderr=subprocess.STDOUT)
+    nbsr = setup_util.NonBlockingStreamReader(p.stdout, 
+      "%s: %s.sh and framework processes have terminated" % (self.name, self.setup_file))
+
+    # Set a limit on total execution time of setup.sh
+    timeout = datetime.now() + timedelta(minutes = 20)
+    time_remaining = timeout - datetime.now()
+
+    # Need to print to stdout once every 10 minutes or Travis-CI will abort
+    travis_timeout = datetime.now() + timedelta(minutes = 5)
+
+    # Flush output until setup.sh work is finished. This is 
+    # either a) when setup.sh exits b) when the port is bound
+    # c) when we run out of time. Note that 'finished' doesn't 
+    # guarantee setup.sh process is dead - the OS may choose to make 
+    # setup.sh a zombie process if it still has living children
+    #
+    # Note: child processes forked (using &) will remain alive 
+    # after setup.sh has exited. The will have inherited the 
+    # stdout/stderr descriptors and will be directing their 
+    # output to the pipes. 
+    #
+    prefix = "Setup %s: " % self.name
+    while not (p.poll() 
+      or self.benchmarker.is_port_bound(self.port)
+      or time_remaining.total_seconds() < 0):
+      
+      # The conditions above are slow to check, so 
+      # we will delay output substantially if we only
+      # print one line per condition check. 
+      # Adding a tight loop here mitigates the effect, 
+      # ensuring that most of the output directly from 
+      # setup.sh is sent to tee_output before the outer
+      # loop exits and prints things like "setup.sh exited"
+      # 
+      for i in xrange(10):
+        try:
+          line = nbsr.readline(0.05)
+          if line:
+            tee_output(prefix, line)
+
+            # Reset Travis-CI timer
+            travis_timeout = datetime.now() + timedelta(minutes = 5)
+        except setup_util.EndOfStream:
+          tee_output(prefix, "Setup has terminated\n")
+          break
+      time_remaining = timeout - datetime.now()
+
+      if (travis_timeout - datetime.now()).total_seconds() < 0:
+        sys.stdout.write(prefix + 'Printing so Travis-CI does not time out\n')
+        sys.stdout.flush()
+        travis_timeout = datetime.now() + timedelta(minutes = 5)
+
+    # Did we time out?
+    if time_remaining.total_seconds() < 0: 
+      tee_output(prefix, "%s.sh timed out!! Aborting...\n" % self.setup_file)
+      p.kill()
+      return 1
+
+    # What's our return code? 
+    # If setup.sh has terminated, use that code
+    # Otherwise, detect if the port was bound
+    retcode = (p.poll() or 0 if self.benchmarker.is_port_bound(self.port) else 1)
+    if p.poll():
+      tee_output(prefix, "%s.sh process exited naturally with %s\n" % (self.setup_file, p.poll()))
+    elif self.benchmarker.is_port_bound(self.port):
+      tee_output(prefix, "Bound port detected on %s\n" % self.port)
+
+    # Before we return control to the benchmarker, spin up a 
+    # thread to keep an eye on the pipes in case the running 
+    # framework uses stdout/stderr. Once all processes accessing
+    # the subprocess.PIPEs are dead, this thread will terminate. 
+    # Use a different prefix to indicate this is the framework 
+    # speaking
+    prefix = "Server %s: " % self.name
+    def watch_child_pipes(nbsr, prefix):
+      while True:
+        try:
+          line = nbsr.readline(60)
+          if line:
+            tee_output(prefix, line)
+        except setup_util.EndOfStream:
+          tee_output(prefix, "Framework processes have terminated\n")
+          return
+
+    watch_thread = Thread(target = watch_child_pipes,
+      args = (nbsr, prefix))
+    watch_thread.daemon = True
+    watch_thread.start()
+
+    logging.info("Executed %s.sh, returning %s", self.setup_file, retcode)
     os.chdir(previousDir)
-
-    # Stop the progress printer
-    stopFlag.set()
-
-    logging.info("Called setup.py start")
 
     return retcode
   ############################################################
   # End start
-  ############################################################
-
-  ############################################################
-  # stop(benchmarker)
-  # Stops the test using it's setup file
-  ############################################################
-  def stop(self, out, err):
-    # Load profile for this installation
-    profile="%s/bash_profile.sh" % self.directory
-    if not os.path.exists(profile):
-      logging.warning("Directory %s does not have a bash_profile.sh" % self.directory)
-      profile="$FWROOT/config/benchmark_profile"
-    
-    setup_util.replace_environ(config=profile, 
-              command='export TROOT=%s && export IROOT=%s' %
-              (self.directory, self.install_root))
-
-    # Run the module stop (inside parent of TROOT)
-    #     - we use the parent as a historical accident - a lot of tests
-    #       use subprocess's cwd argument already
-    previousDir = os.getcwd()
-    os.chdir(os.path.dirname(self.troot))
-    logging.info("Running setup module stop (cwd=%s)", os.path.dirname(self.troot))
-    try:
-      retcode = self.setup_module.stop(out, err)
-      if retcode == None: 
-        retcode = 0
-    except Exception:
-      retcode = 1 
-      st = traceback.format_exc()
-      st = '\n'.join((4 * ' ') + x for x in st.splitlines())
-      st = "Stop exception:\n%s\n" % st
-      logging.info(st)
-      err.write(st + '\n')
-    os.chdir(previousDir)
-
-    # Give processes sent a SIGTERM a moment to shut down gracefully
-    time.sleep(5)
-
-    return retcode
-  ############################################################
-  # End stop
   ############################################################
 
   ############################################################
@@ -292,12 +384,22 @@ class FrameworkTest:
       test.passed = all(result is 'pass' for (result, reason, url) in results)
       
       def output_result(result, reason, url):
-        out.write("   %s for %s\n" % (result.upper(), url))
-        print "   %s for %s" % (result.upper(), url)
+        specific_rules_url = "http://frameworkbenchmarks.readthedocs.org/en/latest/Project-Information/Framework-Tests/#specific-test-requirements"
+        color = Fore.GREEN
+        if result.upper() == "WARN":
+          color = Fore.YELLOW
+        elif result.upper() == "FAIL":
+          color = Fore.RED
+
+        out.write(("   " + color + "%s" + Style.RESET_ALL + " for %s\n") % (result.upper(), url))
+        print ("   " + color + "%s" + Style.RESET_ALL + " for %s\n") % (result.upper(), url)
         if reason is not None and len(reason) != 0:
           for line in reason.splitlines():
             out.write("     " + line + '\n')
             print "     " + line
+          if not test.passed:
+            out.write("     See %s\n" % specific_rules_url)
+            print "     See %s\n" % specific_rules_url
 
       [output_result(r1,r2,url) for (r1, r2, url) in results]
 
@@ -608,7 +710,7 @@ class FrameworkTest:
 
   def __getattr__(self, name):
     """For backwards compatibility, we used to pass benchmarker 
-    as the argument to the setup.py files"""
+    as the argument to the setup.sh files"""
     try:
       x = getattr(self.benchmarker, name)
     except AttributeError:
@@ -699,6 +801,19 @@ class FrameworkTest:
     self.benchmarker = benchmarker
     self.runTests = runTests
     self.fwroot = benchmarker.fwroot
+    self.approach = ""
+    self.classification = ""
+    self.database = ""
+    self.framework = ""
+    self.language = ""
+    self.orm = ""
+    self.platform = ""
+    self.webserver = ""
+    self.os = ""
+    self.database_os = ""
+    self.display_name = ""
+    self.notes = ""
+    self.versus = ""
     
     # setup logging
     logging.basicConfig(stream=sys.stderr, level=logging.INFO)
@@ -707,29 +822,12 @@ class FrameworkTest:
     if benchmarker.install_strategy is 'pertest':
       self.install_root="%s/pertest/%s" % (self.install_root, name)
 
-    # Used in setup.py scripts for consistency with 
+    # Used in setup.sh scripts for consistency with 
     # the bash environment variables
     self.troot = self.directory
     self.iroot = self.install_root
 
     self.__dict__.update(args)
-
-    # ensure directory has __init__.py file so that we can use it as a Python package
-    if not os.path.exists(os.path.join(directory, "__init__.py")):
-      logging.warning("Please add an empty __init__.py file to directory %s", directory)
-      open(os.path.join(directory, "__init__.py"), 'w').close()
-
-    # Import the module (TODO - consider using sys.meta_path)
-    # Note: You can see the log output if you really want to, but it's a *ton*
-    dir_rel_to_fwroot = os.path.relpath(os.path.dirname(directory), self.fwroot)
-    if dir_rel_to_fwroot != ".":
-      sys.path.append("%s/%s" % (self.fwroot, dir_rel_to_fwroot))
-      logging.log(0, "Adding %s to import %s.%s", dir_rel_to_fwroot, os.path.basename(directory), self.setup_file)
-      self.setup_module = setup_module = importlib.import_module(os.path.basename(directory) + '.' + self.setup_file)
-      sys.path.remove("%s/%s" % (self.fwroot, dir_rel_to_fwroot))
-    else:
-      logging.log(0, "Importing %s.%s", directory, self.setup_file)
-      self.setup_module = setup_module = importlib.import_module(os.path.basename(directory) + '.' + self.setup_file)
   ############################################################
   # End __init__
   ############################################################
@@ -759,6 +857,11 @@ def parse_config(config, directory, benchmarker):
   # The config object can specify multiple tests
   #   Loop over them and parse each into a FrameworkTest
   for test in config['tests']:
+
+    names = [name for (name,keys) in test.iteritems()]
+    if "default" not in names:
+      logging.warn("Framework %s does not define a default test in benchmark_config.json", config['framework'])
+    
     for test_name, test_keys in test.iteritems():
       # Prefix all test names with framework except 'default' test
       if test_name == 'default': 
@@ -770,14 +873,14 @@ def parse_config(config, directory, benchmarker):
       if not test_keys['framework']:
         test_keys['framework'] = config['framework']
       #if test_keys['framework'].lower() != config['framework'].lower():
-      #  print Exception("benchmark_config for test %s is invalid - test framework '%s' must match benchmark_config framework '%s'" % 
+      #  print Exception("benchmark_config.json for test %s is invalid - test framework '%s' must match benchmark_config.json framework '%s'" % 
       #    (test_name, test_keys['framework'], config['framework']))
 
       # Confirm required keys are present
       # TODO have a TechEmpower person confirm this list - I don't know what the website requires....
       required = ['language','webserver','classification','database','approach','orm','framework','os','database_os']
       if not all (key in test_keys for key in required):
-        raise Exception("benchmark_config for test %s is invalid - missing required keys" % test_name)      
+        raise Exception("benchmark_config.json for test %s is invalid - missing required keys" % test_name)      
       
       # Map test type to a parsed FrameworkTestType object
       runTests = dict()

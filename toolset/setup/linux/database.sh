@@ -21,8 +21,6 @@
 # concentrated effort to address these cases, but PR's for specific 
 # problems are welcome
 
-export DB_HOST={database_host}
-
 set -x
 export DEBIAN_FRONTEND=noninteractive
 
@@ -31,6 +29,14 @@ export TFB_DISTRIB_ID=$DISTRIB_ID
 export TFB_DISTRIB_RELEASE=$DISTRIB_RELEASE
 export TFB_DISTRIB_CODENAME=$DISTRIB_CODENAME
 export TFB_DISTRIB_DESCRIPTION=$DISTRIB_DESCRIPTION
+
+##############################
+# check environment
+##############################
+
+# verify that $TFB_DBHOST is set
+echo "TFB_DBHOST: $TFB_DBHOST"
+[ -z "$TFB_DBHOST" ] && echo "ERROR: TFB_DBHOST is not set!"
 
 ##############################
 # Prerequisites
@@ -102,9 +108,11 @@ if [ "$TFB_DISTRIB_CODENAME" == "precise" ]; then
   wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
   sudo apt-get update
   sudo apt-get install -y postgresql-9.3 postgresql-client-9.3
-  sudo /etc/init.d/postgresql start
+  sudo service postgresql start
 fi
-sudo /etc/init.d/postgresql stop
+sudo service postgresql stop
+# Sometimes this doesn't work with postgresql
+sudo killall -s 9 -u postgres
 sudo mv postgresql.conf /etc/postgresql/9.3/main/postgresql.conf
 sudo mv pg_hba.conf /etc/postgresql/9.3/main/pg_hba.conf
 
@@ -112,13 +120,14 @@ sudo rm -rf /ssd/postgresql
 sudo cp -R -p /var/lib/postgresql/9.3/main /ssd/postgresql
 sudo mv 60-postgresql-shm.conf /etc/sysctl.d/60-postgresql-shm.conf
 
-sudo /etc/init.d/postgresql start
+sudo service postgresql start
 
 sudo -u postgres psql template1 < create-postgres-database.sql
 sudo -u benchmarkdbuser psql hello_world < create-postgres.sql
 rm create-postgres-database.sql create-postgres.sql
-
-sudo /etc/init.d/postgresql restart
+# Last chance to make sure postgresql starts up correctly
+sudo killall -s 9 -u postgres
+sudo service postgresql restart
 
 ##############################
 # MongoDB
@@ -142,37 +151,98 @@ sudo cp -R -p /var/lib/mongodb /ssd/
 sudo cp -R -p /var/log/mongodb /ssd/log/
 sudo service mongod start
 
-until nc -z localhost 27017 ; do echo Waiting for MongoDB; sleep 1; done
-mongo < create.js
-rm create.js
-mongod --version
+for i in {1..15}; do
+  nc -z localhost 27017 && break || sleep 1;
+  echo "Waiting for MongoDB ($i/15}"
+done
+nc -z localhost 27017
+if [ $? -eq 0 ]; then
+  mongo < create.js
+  rm create.js
+  mongod --version
+else
+  >&2 echo "MongoDB did not start, skipping"
+fi
 
 ##############################
 # Apache Cassandra
 ##############################
 echo "Setting up Apache Cassandra database"
 sudo apt-get install -qqy openjdk-7-jdk
-export CASS_V=2.0.7
+
+sudo addgroup --system cassandra
+sudo adduser --system --home /ssd/cassandra --no-create-home --ingroup cassandra cassandra
+
+export CASS_V=2.0.12
 wget -nv http://archive.apache.org/dist/cassandra/$CASS_V/apache-cassandra-$CASS_V-bin.tar.gz
-tar xzf apache-cassandra-$CASS_V-bin.tar.gz
+sudo tar xzf apache-cassandra-$CASS_V-bin.tar.gz -C /opt
+sudo ln -s /opt/apache-cassandra-$CASS_V /opt/cassandra
 
 rm -rf /ssd/cassandra /ssd/log/cassandra
 mkdir -p /ssd/cassandra /ssd/log/cassandra
+sudo chown -R cassandra:cassandra /ssd/cassandra /ssd/log/cassandra
 
-sed -i "s/^.*seeds:.*/          - seeds: \"$DB_HOST\"/" cassandra/cassandra.yaml
-sed -i "s/^listen_address:.*/listen_address: $DB_HOST/" cassandra/cassandra.yaml
-sed -i "s/^rpc_address:.*/rpc_address: $DB_HOST/" cassandra/cassandra.yaml
+cp cassandra/cassandra.yaml cassandra/cassandra.yaml.mod
+cat <<EOF > cassandra/cass_conf_replace.sed
+s/- seeds: "\([^"]*\)"/- seeds: "$TFB_DBHOST"/
+s/listen_address: \(.*\)/listen_address: $TFB_DBHOST/
+s/rpc_address: \(.*\)/rpc_address: $TFB_DBHOST/
+EOF
+sed -i -f cassandra/cass_conf_replace.sed cassandra/cassandra.yaml.mod
 
-mv cassandra/cassandra.yaml apache-cassandra-$CASS_V/conf
-mv cassandra/log4j-server.properties apache-cassandra-$CASS_V/conf
-nohup apache-cassandra-$CASS_V/bin/cassandra -p c.pid > cassandra.log
+sudo cp -f cassandra/cassandra.init /etc/init.d/cassandra
+sudo cp -f cassandra/cassandra.init.env /etc/default/cassandra
+sudo cp -f cassandra/cassandra.yaml.mod /opt/apache-cassandra-$CASS_V/conf/cassandra.yaml
+sudo cp -f cassandra/log4j-server.properties /opt/apache-cassandra-$CASS_V/conf
 
-until nc -z $DB_HOST 9160 ; do echo Waiting for Cassandra; sleep 1; done
-cat cassandra/cleanup-keyspace.cql | apache-cassandra-$CASS_V/bin/cqlsh $DB_HOST
-python cassandra/db-data-gen.py > cassandra/tfb-data.cql
-apache-cassandra-$CASS_V/bin/cqlsh -f cassandra/create-keyspace.cql $DB_HOST
-apache-cassandra-$CASS_V/bin/cqlsh -f cassandra/tfb-data.cql $DB_HOST
-rm -rf apache-cassandra-*-bin.tar.gz cassandra
+sudo update-rc.d cassandra defaults
+sudo service cassandra restart
+
+for i in {1..15}; do
+  nc -z $TFB_DBHOST 9160 && break || sleep 1;
+  echo "Waiting for Cassandra ($i/15}"
+done
+nc -z $TFB_DBHOST 9160
+if [ $? -eq 0 ]; then
+  cat cassandra/cleanup-keyspace.cql | /opt/apache-cassandra-$CASS_V/bin/cqlsh $TFB_DBHOST
+  python cassandra/db-data-gen.py > cassandra/tfb-data.cql
+  /opt/apache-cassandra-$CASS_V/bin/cqlsh -f cassandra/create-keyspace.cql $TFB_DBHOST
+  /opt/apache-cassandra-$CASS_V/bin/cqlsh -f cassandra/tfb-data.cql $TFB_DBHOST
+else
+  >&2 echo "Cassandra did not start, skipping"
+fi
+
+##############################
+# Elasticsearch
+##############################
+echo "Setting up Elasticsearch"
+
+export ES_V=1.5.0
+wget -nv https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-$ES_V.tar.gz
+sudo tar zxf elasticsearch-$ES_V.tar.gz -C /opt
+sudo ln -s /opt/elasticsearch-$ES_V /opt/elasticsearch
+
+rm -rf /ssd/elasticsearch /ssd/log/elasticsearch
+mkdir -p /ssd/elasticsearch /ssd/log/elasticsearch
+
+sudo cp elasticsearch/elasticsearch.yml /opt/elasticsearch/config
+sudo cp elasticsearch/elasticsearch /opt/elasticsearch
+
+/opt/elasticsearch/elasticsearch restart
+
+for i in {1..15}; do
+  nc -z $TFB_DBHOST 9200 && break || sleep 1;
+  echo "Waiting for Elasticsearch ($i/15}"
+done
+nc -z $TFB_DBHOST 9200
+if [ $? -eq 0 ]; then
+  sh elasticsearch/es-create-index.sh
+  python elasticsearch/es-db-data-gen.py > elasticsearch/tfb-data.json
+  curl -sS -D - -o /dev/null -XPOST localhost:9200/tfb/world/_bulk --data-binary @elasticsearch/tfb-data.json
+  echo "Elasticsearch DB populated"
+else
+  >&2 echo "Elasticsearch did not start, skipping"
+fi
 
 ##############################
 # Redis

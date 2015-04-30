@@ -8,7 +8,17 @@
 # export http_proxy=http://10.0.1.0:3128
 
 fw_get () {
-  wget --no-check-certificate --trust-server-names "$@"
+  # Start a background process to print a dot every
+  # 30 seconds (avoids travis-ci 10min timeout)
+  while :;do sleep 30; echo -n .;done &
+
+  # -no-verbose disables the big progress bars but keeps
+  # other basic info
+  wget --no-verbose --no-check-certificate \
+    --trust-server-names "$@"
+
+  # Ensure the background job is killed if we are
+  kill $!; trap 'kill $!' SIGTERM
 }
 
 fw_untar() {
@@ -26,6 +36,18 @@ fw_unzip() {
   echo "Removing compressed zip file"
   # use -f to avoid printing errors if they gave additional arguments
   rm -f "$@"
+}
+
+# Download *.deb file and install into IROOT without using sudo
+# Does not download dependant packages
+#
+# Example: fw_apt_to_iroot <package> [<directory>]
+fw_apt_to_iroot() {
+  DIR=${2:-$1}
+  echo "Downloading $1 to $IROOT"
+  apt-get download $1
+  echo "Extracting $1 to $DIR"
+  dpkg-deb -x $1*.deb "$IROOT/$DIR" && rm $1*.deb
 }
 
 # Was there an error for the current dependency?

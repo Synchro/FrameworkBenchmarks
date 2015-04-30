@@ -1,28 +1,19 @@
+<!--#
+Test type 5: Database updates
+TechEmpower Web Framework Benchmarks
+-->
 <!--#declaration
 #include "world.h"
 
-#define AS_cpoll_cppsp_DO
+static World*           pworld_update;
+static UOrmSession*     psql_update;
+static UOrmStatement*   pstmt1;
+static UOrmStatement*   pstmt2;
+static UVector<World*>* pvworld_update;
 
 #ifndef AS_cpoll_cppsp_DO
 static UValue* pvalue;
 #endif
-static UOrmSession*     psql_update;
-static UOrmStatement*   pstmt1;
-static UOrmStatement*   pstmt2;
-static World*           pworld_update;
-static UVector<World*>* pvworld_update;
-
-static void usp_init_update()
-{
-   U_TRACE(5, "::usp_init_update()")
-
-   pworld_update  = U_NEW(World);
-   pvworld_update = U_NEW(UVector<World*>(500));
-
-#ifndef AS_cpoll_cppsp_DO
-   pvalue = U_NEW(UValue(ARRAY_VALUE));
-#endif
-}
 
 static void usp_fork_update()
 {
@@ -30,33 +21,52 @@ static void usp_fork_update()
 
    psql_update = U_NEW(UOrmSession(U_CONSTANT_TO_PARAM("hello_world")));
 
-   pstmt1 = U_NEW(UOrmStatement(*psql_update, U_CONSTANT_TO_PARAM("SELECT randomNumber FROM World WHERE id = ?")));
-   pstmt2 = U_NEW(UOrmStatement(*psql_update, U_CONSTANT_TO_PARAM("UPDATE World SET randomNumber = ? WHERE id = ?")));
-
-   if (pstmt1 == 0 ||
-       pstmt2 == 0)
+   if (psql_update->isReady())
       {
-      U_ERROR("usp_fork_update(): we cound't connect to db, exiting...");
-      }
+      pstmt1 = U_NEW(UOrmStatement(*psql_update, U_CONSTANT_TO_PARAM("SELECT randomNumber FROM World WHERE id = ?")));
+      pstmt2 = U_NEW(UOrmStatement(*psql_update, U_CONSTANT_TO_PARAM("UPDATE World SET randomNumber = ? WHERE id = ?")));
 
-   pstmt1->use( pworld_update->id);
-   pstmt1->into(pworld_update->randomNumber);
-   pstmt2->use( pworld_update->randomNumber, pworld_update->id);
+      if (pstmt1 == 0 ||
+          pstmt2 == 0)
+         {
+         U_ERROR("usp_fork_update(): we cound't connect to db");
+         }
+
+      pworld_update = U_NEW(World);
+
+      pstmt1->use( pworld_update->id);
+      pstmt1->into(pworld_update->randomNumber);
+      pstmt2->use( pworld_update->randomNumber, pworld_update->id);
+
+      pvworld_update = U_NEW(UVector<World*>(500));
+
+#  ifndef AS_cpoll_cppsp_DO
+      pvalue = U_NEW(UValue(ARRAY_VALUE));
+#  endif
+      }
 }
 
+#ifdef DEBUG
 static void usp_end_update()
 {
    U_TRACE(5, "::usp_end_update()")
 
-   delete pstmt1;
-   delete pstmt2;
-   delete psql_update;
-   delete pvworld_update;
-   delete pworld_update;
-#ifndef AS_cpoll_cppsp_DO
-   delete pvalue;
-#endif
+   if (pstmt1 &&
+       pstmt2)
+      {
+      delete pstmt1;
+      delete pstmt2;
+
+      delete    psql_update;
+      delete pvworld_update;
+      delete  pworld_update;
+
+#  ifndef AS_cpoll_cppsp_DO
+      delete pvalue;
+#  endif
+      }
 }
+#endif
 -->
 <!--#args
 queries;
@@ -80,14 +90,12 @@ while (true)
 
    pstmt1->execute();
 
-   U_INTERNAL_DUMP("pworld_update->randomNumber = %d", pworld_update->randomNumber)
-
    pworld_update->randomNumber = u_get_num_random(10000);
 
    pstmt2->execute();
 
 #ifdef AS_cpoll_cppsp_DO
-   USP_PRINTF("{\"id\":%d,\"randomNumber\":%d}", pworld_update->id, pworld_update->randomNumber);
+   USP_PRINTF("{\"id\":%u,\"randomNumber\":%u}", pworld_update->id, pworld_update->randomNumber);
 #endif
 
    pvworld_update->push_back(U_NEW(World(*pworld_update)));
@@ -103,7 +111,7 @@ while (true)
 USP_PUTS_CHAR(']');
 #else
 USP_JSON_stringify(*pvalue, UVector<World*>, *pvworld_update);
+pvalue->clear();
 #endif
-
 pvworld_update->clear();
 -->

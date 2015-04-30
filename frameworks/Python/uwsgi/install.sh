@@ -1,15 +1,14 @@
 #!/bin/bash
+export PY2_ROOT=$IROOT/py2
+export PY2=$PY2_ROOT/bin/python
+export PY2_PIP=$PY2_ROOT/bin/pip
+export PY2_GUNICORN=$PY2_ROOT/bin/gunicorn
+
+export NGINX_HOME=${IROOT}/nginx
 
 mkdir -p $IROOT/.pip_cache
 export PIP_DOWNLOAD_CACHE=$IROOT/.pip_cache
 
 fw_depends python2 nginx
 
-$IROOT/py2/bin/virtualenv $TROOT/py2
-$TROOT/py2/bin/pip install -r $TROOT/requirements.txt
-
-#$IROOT/py3/bin/python3 -m venv $TROOT/py3
-#$TROOT/py3/bin/pip install -r $TROOT/requirements.txt
-
-#$IROOT/pypy/bin/virtualenv $TROOT/pypy
-#$TROOT/pypy/bin/pip install -r $TROOT/requirements-pypy.txt
+$PY2_PIP install --install-option="--prefix=${PY2_ROOT}" -r $TROOT/requirements.txt

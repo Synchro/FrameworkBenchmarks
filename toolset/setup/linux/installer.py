@@ -19,6 +19,14 @@ class Installer:
     linux_install_root = self.fwroot + "/toolset/setup/linux"
     imode = self.benchmarker.install
 
+    script_vars = {
+      'TFB_DBHOST': self.benchmarker.database_host
+    }
+    l=[]
+    for k,v in script_vars.iteritems():
+      l.append("export %s=%s" % (k,v))
+    script_vars_str = "\n".join(l) + "\n\n"
+
     if imode == 'all' or imode == 'server':
       self.__install_server_software()
 
@@ -26,10 +34,11 @@ class Installer:
       print("\nINSTALL: Installing database software\n")   
       self.__run_command("cd .. && " + self.benchmarker.database_sftp_string(batch_file="../config/database_sftp_batch"), True)
       with open (linux_install_root + "/database.sh", "r") as myfile:
-        remote_script=myfile.read().format(database_host=self.benchmarker.database_host)
         print("\nINSTALL: %s" % self.benchmarker.database_ssh_string)
-        p = subprocess.Popen(self.benchmarker.database_ssh_string.split(" ") + ["bash"], stdin=subprocess.PIPE)
-        p.communicate(remote_script)
+        p = subprocess.Popen(self.benchmarker.database_ssh_string.split(" ") +
+                             ["bash"], stdin=subprocess.PIPE)
+        remote_script = myfile.read()
+        p.communicate(script_vars_str + remote_script)
         returncode = p.returncode
         if returncode != 0:
           self.__install_error("status code %s running subprocess '%s'." % (returncode, self.benchmarker.database_ssh_string))
@@ -55,10 +64,12 @@ class Installer:
   ############################################################
   def __install_server_software(self):
     print("\nINSTALL: Installing server software (strategy=%s)\n"%self.strategy)
-    # Install global prerequisites
+    # Install global prerequisites (requires sudo)
     bash_functions_path='$FWROOT/toolset/setup/linux/bash_functions.sh'
     prereq_path='$FWROOT/toolset/setup/linux/prerequisites.sh'
     self.__run_command(". %s && . %s" % (bash_functions_path, prereq_path))
+    self.__run_command("sudo chown -R %s:%s %s" % (self.benchmarker.runner_user,
+      self.benchmarker.runner_user, os.path.join(self.fwroot, self.install_dir)))
 
     tests = gather_tests(include=self.benchmarker.test, 
       exclude=self.benchmarker.exclude,
@@ -96,34 +107,43 @@ class Installer:
       previousDir = os.getcwd()
       os.chdir(test_dir)
 
-      # Load profile for this installation
-      profile="%s/bash_profile.sh" % test_dir
-      if not os.path.exists(profile):
-        logging.warning("Directory %s does not have a bash_profile"%test_dir)
-        profile="$FWROOT/config/benchmark_profile"
-      else:
-        logging.info("Loading environment from %s (cwd=%s)", profile, test_dir)
-      setup_util.replace_environ(config=profile, 
+      # Load environment
+      setup_util.replace_environ(config='$FWROOT/config/benchmark_profile', 
         command='export TROOT=%s && export IROOT=%s' %
         (test_dir, test_install_dir))
 
-      # Run test installation script
-      #   FWROOT - Path of the FwBm root
-      #   IROOT  - Path of this test's install directory
+      # Run the install.sh script for the test as the "testrunner" user
+      # 
+      # `sudo` - Switching user requires superuser privs
+      #   -u [username] The username
+      #   -E Preserves the current environment variables
+      #   -H Forces the home var (~) to be reset to the user specified
       #   TROOT  - Path to this test's directory 
-      self.__run_command('''
-        export TROOT=%s && 
-        export IROOT=%s && 
-        source %s && 
-        source %s''' % 
-        (test_dir, test_install_dir, 
-          bash_functions_path, test_install_file),
-          cwd=test_install_dir)
+      #   IROOT  - Path of this test's install directory
+      # TODO export bash functions and call install.sh directly
+      command = 'sudo -u %s -E -H bash -c "source %s && source %s"' % (
+        self.benchmarker.runner_user, 
+        bash_functions_path, 
+        test_install_file)
+
+      debug_command = '''\
+        export FWROOT=%s && \\
+        export TROOT=%s && \\
+        export IROOT=%s && \\
+        cd $IROOT && \\
+        %s''' % (self.fwroot, 
+          test_dir, 
+          test_install_dir,
+          command)
+      logging.info("To run installation manually, copy/paste this:\n%s", debug_command)
+
+      # Run test installation script
+      self.__run_command(command, cwd=test_install_dir)
 
       # Move back to previous directory
       os.chdir(previousDir)
 
-    self.__run_command("sudo apt-get -y autoremove");    
+    self.__run_command("sudo apt-get -yq autoremove");    
 
     print("\nINSTALL: Finished installing server software\n")
   ############################################################
@@ -144,47 +164,21 @@ class Installer:
   ############################################################
   # __run_command
   ############################################################
-  def __run_command(self, command, send_yes=False, cwd=None, retry=False):
+  def __run_command(self, command, send_yes=False, cwd=None):
     if cwd is None: 
         cwd = self.install_dir
 
-    if retry:
-      max_attempts = 5
-    else:
-      max_attempts = 1
-    attempt = 1
-    delay = 0
     if send_yes:
       command = "yes yes | " + command
         
     rel_cwd = setup_util.path_relative_to_root(cwd)
-    print("INSTALL: %s (cwd=$FWROOT%s)" % (command, rel_cwd))
+    print("INSTALL: %s (cwd=$FWROOT/%s)" % (command, rel_cwd))
 
-    while attempt <= max_attempts:
-      error_message = ""
-      try:
-
-        # Execute command.
-        subprocess.check_call(command, shell=True, cwd=cwd, executable='/bin/bash')
-        break  # Exit loop if successful.
-      except:
-        exceptionType, exceptionValue, exceptionTraceBack = sys.exc_info()
-        error_message = "".join(traceback.format_exception_only(exceptionType, exceptionValue))
-
-      # Exit if there are no more attempts left.
-      attempt += 1
-      if attempt > max_attempts:
-        break
-
-      # Delay before next attempt.
-      if delay == 0:
-        delay = 5
-      else:
-        delay = delay * 2
-      print("Attempt %s/%s starting in %s seconds." % (attempt, max_attempts, delay))
-      time.sleep(delay)
-
-    if error_message:
+    try:
+      subprocess.check_call(command, shell=True, cwd=cwd, executable='/bin/bash')
+    except:
+      exceptionType, exceptionValue, exceptionTraceBack = sys.exc_info()
+      error_message = "".join(traceback.format_exception_only(exceptionType, exceptionValue))
       self.__install_error(error_message)
   ############################################################
   # End __run_command

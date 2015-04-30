@@ -77,7 +77,9 @@ def provider_aws(config, role, ip_address='172.16.0.16')
   end
 end
 
-def provider_virtualbox(config, role)
+def provider_virtualbox(config, role, ip_address='172.16.0.16')
+  config.vm.network "private_network", ip: ip_address
+  
   config.vm.provider :virtualbox do |vb, override|
     override.vm.hostname = "TFB-#{role}"
 
@@ -93,10 +95,27 @@ def provider_virtualbox(config, role)
       vb.gui = true
     end
 
-    vb.memory = ENV.fetch('TFB_VB_MEM', 2048)
+    # Improve Windows VirtualBox DNS resolution speed
+    # Addresses mitchellh/vagrant#1807 and TechEmpower/FrameworkBenchmarks#1288
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+
+    vb.memory = ENV.fetch('TFB_VB_MEM', 3022)
     vb.cpus = ENV.fetch('TFB_VB_CPU', 2)
 
-    override.vm.synced_folder "../..", "/FrameworkBenchmarks"
+    # The VirtualBox file system for shared folders (vboxfs)
+    # does not support posix's chown/chmod - these can only 
+    # be set at mount time, and they are uniform for the entire
+    # shared directory. We require chown, because we have the 
+    # testrunner user account, so this is a problem. To mitigate
+    # the effects, we set the folders and files to 777 permissions. 
+    # Even though we cannot chown them to testrunner, with 777 and 
+    # owner vagrant *most* of the software works ok. Occasional 
+    # issues are still possible. 
+    #
+    # See mitchellh/vagrant#4997
+    # See http://superuser.com/a/640028/136050
+    override.vm.synced_folder "../..", "/FrameworkBenchmarks", :mount_options => ["dmode=777", "fmode=777"]
 
     if role.eql? "all" or role.eql? "app"
       override.vm.network :forwarded_port, guest: 8080, host: 28080

@@ -3,6 +3,10 @@ installs
 *.log
 node_modules/
 
+# Added for pedestal framework test
+lib/
+.lein-deps-sum
+
 # eclipse
 .classpath
 .project
@@ -72,3 +76,6 @@ beego/pkg/*
 
 # urweb
 frameworks/Ur/urweb/*.exe
+
+# nim
+nimcache

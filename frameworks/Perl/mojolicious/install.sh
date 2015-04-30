@@ -1,6 +1,7 @@
 #!/bin/bash
+export PERL_HOME=${IROOT}/perl-5.18
 
 fw_depends perl
 
-carton install --cpanfile $TROOT/cpanfile
-echo installed Mojolicious app dependencies
+${PERL_HOME}/bin/carton install --cpanfile ${TROOT}/cpanfile
+

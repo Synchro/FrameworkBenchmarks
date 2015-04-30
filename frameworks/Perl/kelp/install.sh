@@ -1,8 +1,9 @@
 #!/bin/bash
+export PERL_HOME=${IROOT}/perl-5.18
 
 fw_depends perl nginx
 
-cpanm --notest --no-man-page \
+${PERL_HOME}/bin/cpanm --notest --no-man-page \
     Kelp \
     DBI \
     DBD::mysql \
