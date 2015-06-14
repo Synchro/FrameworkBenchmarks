@@ -68,10 +68,7 @@ sudo useradd benchmarkdbuser -p benchmarkdbpass
 # MySQL
 ##############################
 echo "Setting up MySQL database"
-sudo sh -c "echo mysql-server mysql-server/root_password_again select secret | debconf-set-selections"
-sudo sh -c "echo mysql-server mysql-server/root_password select secret | debconf-set-selections"
-
-sudo apt-get -y install mysql-server
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-server
 
 sudo stop mysql
 # disable checking of disk size
@@ -92,6 +89,8 @@ sudo start mysql
 #Wait for MySQL to start
 sudo mysqladmin -uroot -psecret --silent --wait=60 ping
 
+# Set root password
+sudo mysqladmin -u root password secret
 # Insert data
 mysql -uroot -psecret < create.sql
 rm create.sql
